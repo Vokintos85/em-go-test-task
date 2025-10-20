@@ -1,0 +1,187 @@
+openapi: 3.0.3
+info:
+  title: Subscriptions Service API
+  version: 1.0.0
+servers:
+  - url: http://localhost:8080
+paths:
+  /healthz:
+    get:
+      summary: Health check
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: ok
+  /subscriptions:
+    get:
+      summary: List subscriptions
+      responses:
+        '200':
+          description: A list of subscriptions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Subscription'
+    post:
+      summary: Create a subscription
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateSubscriptionRequest'
+      responses:
+        '201':
+          description: Subscription created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Subscription'
+        '400':
+          description: Invalid request
+  /subscriptions/summary:
+    get:
+      summary: Monthly subscription summary
+      parameters:
+        - in: query
+          name: month
+          description: Billing period month in MM-YYYY or YYYY-MM format
+          required: true
+          schema:
+            type: string
+            example: 2024-03
+      responses:
+        '200':
+          description: Monthly summary of subscription amounts
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SummaryResponse'
+        '400':
+          description: Invalid month provided
+  /subscriptions/{id}:
+    get:
+      summary: Get subscription by ID
+      parameters:
+        - $ref: '#/components/parameters/SubscriptionID'
+      responses:
+        '200':
+          description: Subscription details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Subscription'
+        '404':
+          description: Subscription not found
+    put:
+      summary: Update subscription
+      parameters:
+        - $ref: '#/components/parameters/SubscriptionID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateSubscriptionRequest'
+      responses:
+        '200':
+          description: Updated subscription
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Subscription'
+        '404':
+          description: Subscription not found
+    delete:
+      summary: Delete subscription
+      parameters:
+        - $ref: '#/components/parameters/SubscriptionID'
+      responses:
+        '204':
+          description: Subscription deleted
+        '404':
+          description: Subscription not found
+components:
+  parameters:
+    SubscriptionID:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+  schemas:
+    Subscription:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+        plan:
+          type: string
+        amount_cents:
+          type: integer
+          format: int64
+        currency:
+          type: string
+        billing_period:
+          type: string
+          description: Billing period formatted as YYYY-MM
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+      required:
+        - id
+        - user_id
+        - plan
+        - amount_cents
+        - currency
+        - billing_period
+        - created_at
+        - updated_at
+    CreateSubscriptionRequest:
+      type: object
+      properties:
+        user_id:
+          type: string
+        plan:
+          type: string
+        amount_cents:
+          type: integer
+          format: int64
+          minimum: 0
+        currency:
+          type: string
+          example: USD
+        billing_period:
+          type: string
+          example: 03-2024
+      required:
+        - user_id
+        - plan
+        - amount_cents
+        - currency
+        - billing_period
+    SummaryResponse:
+      type: object
+      properties:
+        month:
+          type: string
+          description: Billing period month formatted as YYYY-MM
+        total_amount_cents:
+          type: integer
+          format: int64
+      required:
+        - month
+        - total_amount_cents

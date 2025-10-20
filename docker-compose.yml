@@ -1,0 +1,44 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: subscriptions
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+      - ./migrations/0001_init.sql:/docker-entrypoint-initdb.d/0001_init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d subscriptions"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build: .
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://postgres:postgres@db:5432/subscriptions?sslmode=disable
+      HTTP_PORT: "8080"
+    ports:
+      - "8080:8080"
+
+  swagger:
+    image: swaggerapi/swagger-ui:latest
+    environment:
+      SWAGGER_JSON: /openapi.yaml
+    volumes:
+      - ./swagger/openapi.yaml:/openapi.yaml:ro
+    ports:
+      - "8081:8080"
+    depends_on:
+      - app
+
+volumes:
+  db-data:
